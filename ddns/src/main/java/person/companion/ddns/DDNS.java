@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -22,20 +23,31 @@ import java.util.stream.Collectors;
  */
 public class DDNS {
     public static void main(String[] args) throws Exception {
-        Client client = createClient();
+        DomainParam param = new DomainParam();
+        param.setAccessKeyId("xx");
+        param.setSecret("xx");
+        param.setType("A");
+        param.setDomainName("xx.com");
+        param.setParseList(Arrays.asList("note", "gitlab"));
+
+        execute(param);
+    }
+
+    static void execute(DomainParam domainParam) throws Exception {
+        Client client = createClient(domainParam);
         // 查询已经有的解析记录
-        DescribeDomainRecordsRequest describe = new DescribeDomainRecordsRequest().setDomainName(DDNSConstants.DOMAIN_NAME);
+        DescribeDomainRecordsRequest describe = new DescribeDomainRecordsRequest().setDomainName(domainParam.getDomainName());
         List<String> existsRecords = getExistRecords(client, describe).stream().map(DomainRecord::getRr).collect(Collectors.toList());
 
         // 不能添加已有记录，会报错
-        ArrayList<String> addRecordList = new ArrayList<>(DDNSConstants.RR);
+        ArrayList<String> addRecordList = new ArrayList<>(domainParam.getParseList());
         addRecordList.removeAll(existsRecords);
         String currentHostIP = getCurrentHostIP();
         System.out.println("-------------------------------当前主机公网IP为：" + currentHostIP + "-------------------------------");
         for (String rr : addRecordList) {
             AddDomainRecordRequest request = new AddDomainRecordRequest();
-            request.setType(DDNSConstants.TYPE);
-            request.setDomainName(DDNSConstants.DOMAIN_NAME);
+            request.setType(domainParam.getType());
+            request.setDomainName(domainParam.getDomainName());
             request.setValue(currentHostIP);
             request.setRR(rr);
             client.addDomainRecord(request);
@@ -49,9 +61,9 @@ public class DDNS {
             List<DomainRecord> domainRecords = getExistRecords(client, describe);
             for (DomainRecord record : domainRecords) {
                 // 更新数据
-                if (!currentHostIP.equals(record.getValue()) && DDNSConstants.RR.contains(record.getRr())) {
+                if (!currentHostIP.equals(record.getValue()) && domainParam.getParseList().contains(record.getRr())) {
                     UpdateDomainRecordRequest update = new UpdateDomainRecordRequest();
-                    update.setType(DDNSConstants.TYPE);
+                    update.setType(domainParam.getType());
                     update.setValue(currentHostIP);
                     update.setRR(record.getRr());
                     update.setRecordId(record.getRecordId());
@@ -82,12 +94,12 @@ public class DDNS {
      * @return Client
      * @throws Exception exception
      */
-    public static Client createClient() throws Exception {
+    public static Client createClient(DomainParam domainParam) throws Exception {
         Config config = new Config()
                 // 您的AccessKey ID
-                .setAccessKeyId(DDNSConstants.ACCESS_KEY_ID)
+                .setAccessKeyId(domainParam.getAccessKeyId())
                 // 您的AccessKey Secret
-                .setAccessKeySecret(DDNSConstants.SECRET);
+                .setAccessKeySecret(domainParam.getSecret());
         // 访问的域名
         config.endpoint = "alidns.cn-hangzhou.aliyuncs.com";
         return new Client(config);
