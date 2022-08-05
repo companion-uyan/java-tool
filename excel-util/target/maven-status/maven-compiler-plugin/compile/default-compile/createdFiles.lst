@@ -1,0 +1,13 @@
+person\companion\excel\model\ExcelImportR.class
+person\companion\excel\test\UserHandleInfo.class
+person\companion\excel\test\UserInfo.class
+person\companion\excel\function\Handle.class
+person\companion\excel\util\ExcelUtil.class
+person\companion\excel\assist\ExcelImport.class
+person\companion\excel\model\ImportParam.class
+person\companion\excel\assist\ExcelExport.class
+person\companion\excel\model\SheetParam.class
+person\companion\excel\assist\ExcelImport$1.class
+person\companion\excel\model\ColumnParam.class
+person\companion\excel\test\ExcelTest.class
+person\companion\excel\function\Valid.class
