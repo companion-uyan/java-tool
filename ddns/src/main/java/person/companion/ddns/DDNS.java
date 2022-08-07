@@ -4,6 +4,7 @@ import com.aliyun.alidns20150109.Client;
 import com.aliyun.alidns20150109.models.AddDomainRecordRequest;
 import com.aliyun.alidns20150109.models.DescribeDomainRecordsRequest;
 import com.aliyun.alidns20150109.models.UpdateDomainRecordRequest;
+import com.aliyun.tea.utils.StringUtils;
 import com.aliyun.teaopenapi.models.Config;
 
 import java.io.BufferedReader;
@@ -42,7 +43,7 @@ public class DDNS {
         // 不能添加已有记录，会报错
         ArrayList<String> addRecordList = new ArrayList<>(domainParam.getParseList());
         addRecordList.removeAll(existsRecords);
-        String currentHostIP = getCurrentHostIP();
+        String currentHostIP = getCurrentHostIPUntilSuccess();
         System.out.println("-------------------------------当前主机公网IP为：" + currentHostIP + "-------------------------------");
         for (String rr : addRecordList) {
             AddDomainRecordRequest request = new AddDomainRecordRequest();
@@ -56,7 +57,7 @@ public class DDNS {
         // 死循环获取最新的ip
         while (true) {
             TimeUnit.MINUTES.sleep(1);
-            currentHostIP = getCurrentHostIP();
+            currentHostIP = getCurrentHostIPUntilSuccess();
             System.out.println("-------------------------------当前主机公网IP为：" + currentHostIP + "-------------------------------");
             List<DomainRecord> domainRecords = getExistRecords(client, describe);
             for (DomainRecord record : domainRecords) {
@@ -106,9 +107,22 @@ public class DDNS {
     }
 
     /**
+     * 获取当前主机公网IP直到成功
+     */
+    private static String getCurrentHostIPUntilSuccess() {
+        String ip;
+
+        do {
+            ip = getCurrentHostIp();
+        } while (!StringUtils.isEmpty(ip));
+
+        return ip;
+    }
+
+    /**
      * 获取当前主机公网IP
      */
-    private static String getCurrentHostIP() {
+    private static String getCurrentHostIp() {
         // 这里使用jsonip.com第三方接口获取本地IP
         String jsonip = "https://jsonip.com/";
         // 接口返回结果
@@ -119,6 +133,7 @@ public class DDNS {
             URL url = new URL(jsonip);
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
+            urlConnection.setConnectTimeout(60000);
             urlConnection.connect();
             in = new BufferedReader(new InputStreamReader(
                     urlConnection.getInputStream()));
